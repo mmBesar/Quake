@@ -72,9 +72,8 @@ jobs:
           mkdir -p AppDir/usr/bin
           cp vkquake AppDir/usr/bin/
           
-          # Create desktop file
-          mkdir -p AppDir/usr/share/applications
-          cat > AppDir/usr/share/applications/vkquake.desktop << 'EOF'
+          # Create desktop file in root of AppDir (some appimagetool versions expect this)
+          cat > AppDir/vkquake.desktop << 'EOF'
           [Desktop Entry]
           Type=Application
           Name=vkQuake
@@ -82,6 +81,10 @@ jobs:
           Icon=vkquake
           Categories=Game;
           EOF
+          
+          # Also create it in the standard location
+          mkdir -p AppDir/usr/share/applications
+          cp AppDir/vkquake.desktop AppDir/usr/share/applications/
           
           # Create icon directory and placeholder icon
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
@@ -100,12 +103,11 @@ jobs:
           cp AppDir/usr/share/icons/hicolor/256x256/apps/vkquake.png AppDir/.DirIcon
           
           # Verify structure before building AppImage
-          ls -la AppDir/
-          ls -la AppDir/usr/share/applications/
-          cat AppDir/usr/share/applications/vkquake.desktop
+          echo "=== AppDir structure ==="
+          find AppDir -type f -exec ls -la {} \;
           
-          # Build AppImage
-          /tmp/appimagetool AppDir vkquake-${{ steps.get_tag.outputs.tag }}-linux-amd64.AppImage
+          # Try with verbose output to see what's happening
+          /tmp/appimagetool --verbose AppDir vkquake-${{ steps.get_tag.outputs.tag }}-linux-amd64.AppImage
 
       - name: Build for ARM64
         if: matrix.arch == 'arm64'
