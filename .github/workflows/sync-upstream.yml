@@ -1,0 +1,47 @@
+name: Sync Upstream Source
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-upstream:
+    name: Sync upstream to local upstream branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote and fetch
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git remote add upstream https://github.com/Novum/vkQuake.git
+          # Remove local tags so upstream tags can overwrite cleanly
+          git tag -l | xargs -r git tag -d
+          git fetch upstream --tags --force
+
+      - name: Reset upstream branch and remove workflows
+        run: |
+          git checkout -B upstream upstream/master
+          rm -rf .github/workflows
+          git add -u
+          git commit -m "Strip workflows from upstream" || true
+          git push origin upstream --force
+
+      - name: Sync tags (stripped version)
+        run: |
+          for tag in $(git tag -l 'QUAKE2_*'); do
+            git checkout -f $tag
+            rm -rf .github/workflows
+            git add -u
+            git commit -m "Strip workflows from $tag" || true
+            git tag -f $tag
+            git push origin $tag --force
+          done
