@@ -64,7 +64,7 @@ RUN mkdir -p /quake/{bin,game,config,logs,mods} && \
 
 # Copy built binary
 # COPY --from=builder /build/Quake/quakespasm /quake/bin/quakespasm # wrong
-COPY --from=builder /build/Quake/quake /quake/bin/quake
+COPY --from=builder /build/Quake/vkquake /quake/bin/vkquake
 
 # Copy mods
 COPY --from=builder /build/mods /quake/mods
