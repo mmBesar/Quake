@@ -205,13 +205,13 @@ main() {
     cmd_args=$(build_command_args)
     
     echo -e "${GREEN}Starting server with command:${NC}"
-    echo -e "${YELLOW}/quake/bin/quakespasm $cmd_args${NC}"
+    echo -e "${YELLOW}/quake/bin/quake $cmd_args${NC}"
     
     # Change to logs directory for output
     cd /quake/logs
     
     # Start the server
-    exec /quake/bin/quakespasm $cmd_args &
+    exec /quake/bin/quake $cmd_args &
     SERVER_PID=$!
     
     echo -e "${GREEN}Server started with PID: $SERVER_PID${NC}"
