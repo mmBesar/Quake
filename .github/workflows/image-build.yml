@@ -151,6 +151,8 @@ jobs:
       run: |
         # Copy Dockerfile from main branch
         cp main/Dockerfile .
+        # Copy Dockerfile from main branch
+        cp main/start.sh .
         # Copy source from upstream
         cp -r upstream/* .
         # Ensure we have the Dockerfile in the build context
