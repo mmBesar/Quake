@@ -1,6 +1,9 @@
 name: Build vkQuake Server Docker Image
 
 on:
+
+  workflow_dispatch:
+
   push:
     branches: [ upstream ]
   pull_request:
