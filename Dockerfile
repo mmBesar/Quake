@@ -31,7 +31,13 @@ RUN git clone https://github.com/Novum/vkQuake.git .
 # Build vkQuake (we'll use the regular build but run in dedicated mode)
 # For ARM64 compatibility, we'll use the traditional make approach
 WORKDIR /build/Quake
-RUN make -j$(nproc)
+
+# RUN make -j$(nproc)  # original
+
+# remove unneeded builder outputs after the make
+RUN make -j$(nproc) \
+  && strip vkquake \
+  && rm -rf /build/{Quake,mods}  # if you don't need sources/artifacts later
 
 # Download and prepare Frogbot for bot support
 WORKDIR /build/mods
@@ -53,6 +59,8 @@ RUN apt-get update && apt-get install -y \
     libxcb1 \
     libgl1-mesa-glx \
     ca-certificates \
+    libvulkan1 \
+    mesa-vulkan-drivers \
     && rm -rf /var/lib/apt/lists/*
 
 # Create quake user and directories
@@ -64,13 +72,15 @@ RUN mkdir -p /quake/{bin,game,config,logs,mods} && \
 
 # Copy built binary
 # COPY --from=builder /build/Quake/quakespasm /quake/bin/quakespasm # wrong
-COPY --from=builder /build/Quake/vkquake /quake/bin/vkquake
+# COPY --from=builder /build/Quake/vkquake /quake/bin/vkquake # original
+COPY --from=builder --chown=quake:quake /build/Quake/vkquake /quake/bin/vkquake
 
 # Copy mods
 COPY --from=builder /build/mods /quake/mods
 
 # Copy startup script
-COPY start.sh /quake/start.sh
+# COPY start.sh /quake/start.sh # original
+COPY --chown=quake:quake start.sh /quake/start.sh
 RUN chmod +x /quake/start.sh
 
 # Set working directory
