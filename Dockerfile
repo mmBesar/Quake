@@ -63,7 +63,8 @@ RUN mkdir -p /quake/{bin,game,config,logs,mods} && \
     chown -R quake:quake /quake
 
 # Copy built binary
-COPY --from=builder /build/Quake/quakespasm /quake/bin/quakespasm
+# COPY --from=builder /build/Quake/quakespasm /quake/bin/quakespasm # wrong
+COPY --from=builder /build/Quake/quake /quake/bin/quake
 
 # Copy mods
 COPY --from=builder /build/mods /quake/mods
