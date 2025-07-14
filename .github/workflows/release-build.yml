@@ -1,0 +1,115 @@
+name: Build vkQuake with Fixed Port
+
+on:
+  push:
+    branches:
+      - upstream
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (leave empty for latest)'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: upstream
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get_tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            LATEST_TAG=$(git tag --sort=-version:refname | head -n1)
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          fi
+          echo "Building tag: $LATEST_TAG"
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y libsdl2-dev libvulkan-dev libvorbis-dev libmpg123-dev libflac-dev libopusfile-dev
+          sudo apt-get install -y fuse libfuse2 wget
+          
+          # Install AppImage tools
+          wget -O /tmp/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool
+
+      - name: Install Vulkan SDK
+        run: |
+          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
+          sudo apt-get update
+          sudo apt-get install -y vulkan-sdk
+
+      - name: Apply port fix
+        run: |
+          sed -i 's/address\.sin_port = htons ((unsigned short)port);/if (port == 0) port = 26001;\n\taddress.sin_port = htons ((unsigned short)port);/' Quake/net_udp.c
+
+      - name: Build for AMD64
+        if: matrix.arch == 'amd64'
+        run: |
+          cd Quake
+          meson setup build --buildtype=release
+          ninja -C build
+          strip build/vkquake
+          
+          # Create AppImage
+          mkdir -p AppDir/usr/bin
+          cp build/vkquake AppDir/usr/bin/
+          mkdir -p AppDir/usr/share/applications
+          cat > AppDir/usr/share/applications/vkquake.desktop << EOF
+          [Desktop Entry]
+          Type=Application
+          Name=vkQuake
+          Exec=vkquake
+          Icon=vkquake
+          Categories=Game;
+          EOF
+          
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          # Use a generic icon if no icon exists
+          touch AppDir/usr/share/icons/hicolor/256x256/apps/vkquake.png
+          
+          /tmp/appimagetool AppDir vkquake-${{ steps.get_tag.outputs.tag }}-linux-amd64.AppImage
+
+      - name: Build for ARM64
+        if: matrix.arch == 'arm64'
+        run: |
+          cd Quake
+          export CC=aarch64-linux-gnu-gcc
+          export CXX=aarch64-linux-gnu-g++
+          meson setup build --buildtype=release
+          ninja -C build
+          aarch64-linux-gnu-strip build/vkquake
+          tar -czf vkquake-${{ steps.get_tag.outputs.tag }}-linux-arm64.tar.gz -C build vkquake
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          name: vkQuake ${{ steps.get_tag.outputs.tag }} (Fixed Port)
+          body: |
+            vkQuake ${{ steps.get_tag.outputs.tag }} with fixed client port 26001
+            
+            Changes:
+            - Client always uses UDP port 26001 instead of random ports
+            - Built for Linux AMD64 (AppImage) and ARM64 (tar.gz)
+          files: |
+            vkquake-${{ steps.get_tag.outputs.tag }}-linux-*.AppImage
+            vkquake-${{ steps.get_tag.outputs.tag }}-linux-*.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
