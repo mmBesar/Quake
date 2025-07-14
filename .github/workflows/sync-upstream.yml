@@ -26,12 +26,19 @@ jobs:
           git tag -l | xargs -r git tag -d
           git fetch upstream --tags --force
 
-      - name: Reset upstream branch and remove workflows
+      - name: Reset upstream branch and preserve workflows
         run: |
+          # Save your workflows
+          mkdir -p /tmp/my-workflows
+          cp -r .github/workflows/* /tmp/my-workflows/ 2>/dev/null || true
+          
           git checkout -B upstream upstream/master
           rm -rf .github/workflows
-          git add -u
-          git commit -m "Strip workflows from upstream" || true
+          mkdir -p .github/workflows
+          cp -r /tmp/my-workflows/* .github/workflows/ 2>/dev/null || true
+          
+          git add .
+          git commit -m "Sync upstream, preserve local workflows" || true
           git push origin upstream --force
 
       - name: Push all tags to origin
@@ -40,12 +47,28 @@ jobs:
 
       - name: Sync tags (stripped version)
         run: |
+          # Create a temporary directory to preserve your workflows
+          mkdir -p /tmp/my-workflows
+          cp -r .github/workflows/* /tmp/my-workflows/ 2>/dev/null || true
+          
           for tag in $(git tag -l); do
+            echo "Processing tag: $tag"
             git checkout -f $tag
+            
+            # Remove upstream workflows but keep your own
             rm -rf .github/workflows
-            git add -u
-            git commit -m "Strip workflows from $tag" || true
+            mkdir -p .github/workflows
+            cp -r /tmp/my-workflows/* .github/workflows/ 2>/dev/null || true
+            
+            git add .
+            git commit -m "Strip upstream workflows from $tag, keep local workflows" || true
             git tag -f $tag
           done
-          git push origin --tags --force
           
+          # Return to main branch and restore workflows
+          git checkout upstream
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp -r /tmp/my-workflows/* .github/workflows/ 2>/dev/null || true
+          
+          git push origin --tags --force
