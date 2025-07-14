@@ -48,11 +48,11 @@ jobs:
       - name: Apply port fix
         run: |
           # Apply the port fix to net_udp.c
-          sed -i 's/address\.sin_port = htons ((unsigned short)port);/if (port == 0) port = 52600;\n\taddress.sin_port = htons ((unsigned short)port);/' Quake/net_udp.c
+          sed -i 's/address\.sin_port = htons ((unsigned short)port);/if (port == 0) port = 57613;\n\taddress.sin_port = htons ((unsigned short)port);/' Quake/net_udp.c
           
           # Verify the change was applied
           echo "=== Port fix applied ==="
-          grep -A2 -B2 "port = 52600" Quake/net_udp.c || echo "Fix not found - checking context:"
+          grep -A2 -B2 "port = 57613" Quake/net_udp.c || echo "Fix not found - checking context:"
           grep -A5 -B5 "sin_port.*htons" Quake/net_udp.c
 
       - name: Set up Docker Buildx
@@ -106,10 +106,10 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.tag }}
           name: vkQuake ${{ steps.get_version.outputs.tag }} (Fixed Port)
           body: |
-            vkQuake ${{ steps.get_version.outputs.tag }} with fixed client port 52600
+            vkQuake ${{ steps.get_version.outputs.tag }} with fixed client port 57613
             
             **Changes:**
-            - Client always uses UDP port 52600 instead of random ports
+            - Client always uses UDP port 57613 instead of random ports
             - Built using upstream's proven Docker build system
             - Includes both AppImage and tar.gz formats for Linux x86_64
             
@@ -153,7 +153,7 @@ jobs:
 
       - name: Apply port fix
         run: |
-          sed -i 's/address\.sin_port = htons ((unsigned short)port);/if (port == 0) port = 52600;\n\taddress.sin_port = htons ((unsigned short)port);/' Quake/net_udp.c
+          sed -i 's/address\.sin_port = htons ((unsigned short)port);/if (port == 0) port = 57613;\n\taddress.sin_port = htons ((unsigned short)port);/' Quake/net_udp.c
 
       - name: Build ARM64 (manual cross-compilation)
         run: |
