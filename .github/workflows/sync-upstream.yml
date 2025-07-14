@@ -23,7 +23,6 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git remote add upstream https://github.com/Novum/vkQuake.git
-          # Remove local tags so upstream tags can overwrite cleanly
           git tag -l | xargs -r git tag -d
           git fetch upstream --tags --force
 
@@ -35,13 +34,18 @@ jobs:
           git commit -m "Strip workflows from upstream" || true
           git push origin upstream --force
 
+      - name: Push all tags to origin
+        run: |
+          git push origin --tags --force
+
       - name: Sync tags (stripped version)
         run: |
-          for tag in $(git tag -l 'QUAKE2_*'); do
+          for tag in $(git tag -l); do
             git checkout -f $tag
             rm -rf .github/workflows
             git add -u
             git commit -m "Strip workflows from $tag" || true
             git tag -f $tag
-            git push origin $tag --force
           done
+          git push origin --tags --force
+          
