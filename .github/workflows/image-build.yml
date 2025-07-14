@@ -1,4 +1,4 @@
-name: Build and Publish Quake II Server Container
+name: Build and Publish vkQuake Server Container
 
 on:
   workflow_dispatch:
