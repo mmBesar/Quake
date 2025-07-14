@@ -63,6 +63,9 @@ jobs:
             
             # Create new tag from the cleaned commit
             git tag -f $tag
+            
+            # Switch back to upstream before deleting temp branch
+            git checkout upstream
             git branch -D temp-$tag
           done
           
