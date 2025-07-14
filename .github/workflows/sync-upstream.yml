@@ -41,34 +41,30 @@ jobs:
           git commit -m "Sync upstream, preserve local workflows" || true
           git push origin upstream --force
 
-      - name: Push all tags to origin
+      - name: Create clean tags without upstream workflows
         run: |
-          git push origin --tags --force
-
-      - name: Sync tags (stripped version)
-        run: |
-          # Create a temporary directory to preserve your workflows
+          # Save your workflows
           mkdir -p /tmp/my-workflows
           cp -r .github/workflows/* /tmp/my-workflows/ 2>/dev/null || true
           
+          # Process each tag
           for tag in $(git tag -l); do
             echo "Processing tag: $tag"
-            git checkout -f $tag
+            # Create a new branch from the tag
+            git checkout -B temp-$tag $tag
             
-            # Remove upstream workflows but keep your own
+            # Remove upstream workflows, keep yours
             rm -rf .github/workflows
             mkdir -p .github/workflows
             cp -r /tmp/my-workflows/* .github/workflows/ 2>/dev/null || true
             
             git add .
-            git commit -m "Strip upstream workflows from $tag, keep local workflows" || true
+            git commit -m "Remove upstream workflows from $tag" || true
+            
+            # Create new tag from the cleaned commit
             git tag -f $tag
+            git branch -D temp-$tag
           done
           
-          # Return to main branch and restore workflows
-          git checkout upstream
-          rm -rf .github/workflows
-          mkdir -p .github/workflows
-          cp -r /tmp/my-workflows/* .github/workflows/ 2>/dev/null || true
-          
+          # Push all tags
           git push origin --tags --force
