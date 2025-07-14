@@ -69,7 +69,7 @@ COPY --from=builder /build/Quake/quakespasm /quake/bin/quakespasm
 COPY --from=builder /build/mods /quake/mods
 
 # Copy startup script
-COPY start.sh /start.sh
+COPY start.sh /quake/start.sh
 RUN chmod +x /quake/start.sh
 
 # Set working directory
