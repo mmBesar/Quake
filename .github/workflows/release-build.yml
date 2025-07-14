@@ -39,19 +39,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y meson ninja-build gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-          sudo apt-get install -y libsdl2-dev libvulkan-dev libvorbis-dev libmpg123-dev libflac-dev libopusfile-dev
+          sudo apt-get install -y libsdl2-dev libvorbis-dev libmpg123-dev libflac-dev libopusfile-dev
           sudo apt-get install -y fuse libfuse2 wget
           
           # Install AppImage tools
           wget -O /tmp/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x /tmp/appimagetool
 
-      - name: Install Vulkan SDK
+      - name: Install Vulkan development headers
         run: |
-          wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
-          sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-jammy.list https://packages.lunarg.com/vulkan/lunarg-vulkan-jammy.list
-          sudo apt-get update
-          sudo apt-get install -y vulkan-sdk
+          # Install Vulkan headers and loader from Ubuntu packages instead of Vulkan SDK
+          sudo apt-get install -y libvulkan-dev vulkan-validationlayers-dev
+          # Install runtime Vulkan dependencies (needed for vkQuake)
+          sudo apt-get install -y libvulkan1 mesa-vulkan-drivers
 
       - name: Apply port fix
         run: |
@@ -90,10 +90,26 @@ jobs:
           cd Quake
           export CC=aarch64-linux-gnu-gcc
           export CXX=aarch64-linux-gnu-g++
-          meson setup build --buildtype=release
+          meson setup build --buildtype=release --cross-file=../cross-arm64.txt
           ninja -C build
           aarch64-linux-gnu-strip build/vkquake
           tar -czf vkquake-${{ steps.get_tag.outputs.tag }}-linux-arm64.tar.gz -C build vkquake
+
+      - name: Create cross-compilation file for ARM64
+        if: matrix.arch == 'arm64'
+        run: |
+          cat > cross-arm64.txt << EOF
+          [binaries]
+          c = 'aarch64-linux-gnu-gcc'
+          cpp = 'aarch64-linux-gnu-g++'
+          strip = 'aarch64-linux-gnu-strip'
+          
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
+          EOF
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
