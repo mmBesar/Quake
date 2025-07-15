@@ -23,8 +23,7 @@ on:
       - 'start.sh'
       - '.github/workflows/image-build.yml'
   schedule:
-    # Check for upstream updates every 12 hours
-    - cron: '0 */12 * * *'
+    - cron: '0 2 * * *'
 
 permissions:
   contents: read
