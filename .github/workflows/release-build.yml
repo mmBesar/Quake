@@ -1,14 +1,14 @@
 name: Build vkQuake with Fixed Port
 
 on:
-  push:
-    branches:
-      - upstream
   workflow_dispatch:
     inputs:
       tag:
         description: 'Tag to build (leave empty for latest)'
         required: false
+#   push:
+#     branches:
+#       - upstream
 
 permissions:
   contents: write
